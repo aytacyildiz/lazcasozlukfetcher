@@ -26,10 +26,9 @@ namespace com.kodgulugum.lazcasozlukfetcher
 
 	class Fetcher
 	{
-		private CQ dom {
-			get;
-			set;
-		}
+		// prop
+		private CQ dom { get; set; }
+		// methods
 		public Dictionary<string,string> getLazcaWords(params string[] letters){
 			Dictionary<string,string> dict = new Dictionary<string, string> ();
 			foreach (var letter in letters) {
