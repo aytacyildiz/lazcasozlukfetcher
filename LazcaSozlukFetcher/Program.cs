@@ -63,9 +63,20 @@ namespace com.kodgulugum.lazcasozlukfetcher
 					dict.Add (new Entry(word,definition.ToString()));
 				}
 			}
+			mergeSameDefinitions(dict);
 			return dict;
 		} 
-		public string getHtml(string url){
+		private void mergeSameDefinitions(List<Entry> dict){
+			for (int i = 0; i < dict.Count; i++) {
+				if(dict.Count <= i+1) break; // because removed items
+				int j = i;
+				while (dict[j].Word == dict[j+1].Word) {
+					dict[j].Definition += dict[j+1].Definition;
+					dict.RemoveAt(j+1);
+				}
+			}
+		}
+		private string getHtml(string url){
 			HttpWebRequest hwreq = (HttpWebRequest)WebRequest.Create (url);
 			// only accept html text
 			hwreq.Accept = "text/html";
