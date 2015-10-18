@@ -47,7 +47,6 @@ namespace com.kodgulugum.lazcasozlukfetcher
 				// find separators
 				var p_elements = dom[".western[lang='tr-TR']"];
 				foreach (var p in p_elements) {
-					//Console.WriteLine (p.NextElementSibling.ElementHtml());
 					// find the next element which will probably be a definition
 					var nextElement = p.NextElementSibling;
 					if (nextElement == null || nextElement.HasAttribute("lang")) continue;
