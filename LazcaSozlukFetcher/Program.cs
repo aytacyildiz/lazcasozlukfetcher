@@ -71,14 +71,14 @@ namespace com.kodgulugum.lazcasozlukfetcher
 				foreach (var p in p_elements) {
 					// find the next element which will probably be a definition
 					var nextElement = p.NextElementSibling;
-					if (nextElement == null || nextElement.HasAttribute("lang")) continue;
+					if (nextElement == null || nextElement.HasAttribute("lang") || nextElement.NodeName != "P") continue;
 					// which word is definied
 					string word = nextElement.FirstChild.TextContent;
 					// get the definition
 					StringBuilder definition = new StringBuilder ();
 					// until reach another separator 
 					while(!nextElement.HasAttribute("lang")){
-						definition.AppendLine (nextElement.InnerHTML);
+						definition.AppendLine ("<p>"+ nextElement.InnerHTML +"</p>");
 						nextElement = nextElement.NextElementSibling;
 						if (nextElement == null) break;
 					}
