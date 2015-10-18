@@ -15,12 +15,21 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			Fetcher f = new Fetcher();
 			var l_dictionary = f.getLazcaWords ("A");
 			// log 
-			foreach (var word in l_dictionary) {
+			foreach (var entry in l_dictionary) {
 				Console.WriteLine ("---------------------------------------------------------------------- Word");
-				Console.WriteLine (word.Key);
+				Console.WriteLine (entry.Word);
 				Console.WriteLine ("---------------------------------------------------------------- Definition");
-				Console.WriteLine (word.Value);
+				Console.WriteLine (entry.Definition);
 			}
+		}
+	}
+
+	class Entry{
+		public string Word { get; set; }
+		public string Definition { get; set; }
+		public Entry(string word, string def){
+			this.Word = word;
+			this.Definition = def;
 		}
 	}
 
@@ -29,8 +38,8 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		// prop
 		private CQ dom { get; set; }
 		// methods
-		public Dictionary<string,string> getLazcaWords(params string[] letters){
-			Dictionary<string,string> dict = new Dictionary<string, string> ();
+		public List<Entry> getLazcaWords(params string[] letters){
+			List<Entry> dict = new List<Entry> ();
 			foreach (var letter in letters) {
 				string url = "http://ayla7.free.fr/laz/Laz." + letter + ".html";
 				// create dom from html string
@@ -52,7 +61,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 						nextElement = nextElement.NextElementSibling;
 						if (nextElement == null) break;
 					}
-					dict.Add (word,definition.ToString());
+					dict.Add (new Entry(word,definition.ToString()));
 				}
 			}
 			return dict;
