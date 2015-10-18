@@ -13,14 +13,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		{
 			// test
 			Fetcher f = new Fetcher();
-			var l_dictionary = f.getLazcaWords ("A");
-			// log 
-			foreach (var entry in l_dictionary) {
-				Console.WriteLine ("---------------------------------------------------------------------- Word");
-				Console.WriteLine (entry.Word);
-				Console.WriteLine ("---------------------------------------------------------------- Definition");
-				Console.WriteLine (entry.Definition);
-			}
+			f.fetchAndSave(Fetcher.Language.Lazca);
 		}
 	}
 
@@ -37,8 +30,37 @@ namespace com.kodgulugum.lazcasozlukfetcher
 	{
 		// prop
 		private CQ dom { get; set; }
+		private List<Entry> words { get; set; }
+		public enum Language { Turkce, Lazca }
 		// methods
-		public List<Entry> getLazcaWords(params string[] letters){
+		public void fetchAndSave(Language lng){
+			words = (lng == Language.Lazca) ? getLazcaWords ("A","B","C","C1","C2","D","E","F","G","Gy","G1","H","I","J","K","K1","Ky","Ky1","L","M","N","O","P","P1","R","S","S1","T","T1","U","V","X","X1","Y","Z","Z1","3","31") : null;
+			StringBuilder wordlistHTML = new StringBuilder ("<datalist id=\""+ Language.Lazca.ToString() +"Words\">"); 
+			for (int i = 0; i < words.Count; i++) {
+				if(words[i].Word==null || words[i].Definition==null) {
+					Console.WriteLine ("HATA: Bir kelimede terslik var");
+					break;
+				};
+				// https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
+				wordlistHTML.Append ("<option data-index=\""+ i.ToString() +"\" value=\""+  words[i].Word.Trim() +"\">");
+				writeToDisk(lng.ToString() + i.ToString() , words[i].Definition);
+			}
+			wordlistHTML.Append ("</datalist>");
+			writeToDisk("datalist"+lng.ToString() , wordlistHTML.ToString());
+		}
+		private void writeToDisk(string name, string data){
+			try {
+				Directory.CreateDirectory("output");
+				using(StreamWriter sw = new StreamWriter( Path.Combine("output" , name+".html") , false , System.Text.Encoding.UTF8 )){
+					sw.Write(data);
+				}
+			}
+			catch (System.IO.IOException e){
+				Console.WriteLine ("HATA: Diske yazmada hata!");
+				Console.WriteLine (e.Message);
+			}
+		}
+		private List<Entry> getLazcaWords(params string[] letters){
 			List<Entry> dict = new List<Entry> ();
 			foreach (var letter in letters) {
 				string url = "http://ayla7.free.fr/laz/Laz." + letter + ".html";
@@ -88,12 +110,12 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			} catch (WebException we) {
 				// todo: handle other exceptions
 				switch (we.Status) {
-				case WebExceptionStatus.NameResolutionFailure:
-					Console.WriteLine ("Girilen adresi tekrar kontrol edin veya internete bağlandığınıza emin olun!"); 
-					break;
-				default:
-					Console.WriteLine ("Hata oluştu: {0}", we.Status);
-					break;
+					case WebExceptionStatus.NameResolutionFailure:
+						Console.WriteLine ("HATA: Girilen adresi tekrar kontrol edin veya internete bağlandığınıza emin olun!"); 
+						break;
+					default:
+						Console.WriteLine ("HATA: {0}", we.Status);
+						break;
 				}
 				return null;
 			}
