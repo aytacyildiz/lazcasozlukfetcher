@@ -35,23 +35,23 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		// methods
 		public void fetchAndSave(Language lng){
 			words = (lng == Language.Lazca) ? getLazcaWords ("A","B","C","C1","C2","D","E","F","G","Gy","G1","H","I","J","K","K1","Ky","Ky1","L","M","N","O","P","P1","R","S","S1","T","T1","U","V","X","X1","Y","Z","Z1","3","31") : null;
-			StringBuilder wordlistHTML = new StringBuilder ("<datalist id=\""+ Language.Lazca.ToString() +"Words\">"); 
+			StringBuilder wordlistHTML = new StringBuilder ("{\"wordlist\":["); 
 			for (int i = 0; i < words.Count; i++) {
 				if(words[i].Word==null || words[i].Definition==null) {
 					Console.WriteLine ("HATA: Bir kelimede terslik var");
 					break;
 				};
 				// https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
-				wordlistHTML.Append ("<option data-index=\""+ i.ToString() +"\" value=\""+  words[i].Word.Trim() +"\">");
-				writeToDisk(lng.ToString() + i.ToString() , words[i].Definition);
+				wordlistHTML.Append ("\""+  words[i].Word.Trim() +"\",");
+				writeToDisk(lng.ToString() + i.ToString() + ".html" , words[i].Definition);
 			}
-			wordlistHTML.Append ("</datalist>");
-			writeToDisk("datalist"+lng.ToString() , wordlistHTML.ToString());
+			wordlistHTML.Append ("\"END\"]}");
+			writeToDisk("datalist"+lng.ToString()+".json" , wordlistHTML.ToString());
 		}
 		private void writeToDisk(string name, string data){
 			try {
 				Directory.CreateDirectory("output");
-				using(StreamWriter sw = new StreamWriter( Path.Combine("output" , name+".html") , false , System.Text.Encoding.UTF8 )){
+				using(StreamWriter sw = new StreamWriter( Path.Combine("output" , name) , false , System.Text.Encoding.UTF8 )){
 					sw.Write(data);
 				}
 			}
@@ -78,7 +78,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 					StringBuilder definition = new StringBuilder ();
 					// until reach another separator 
 					while(!nextElement.HasAttribute("lang")){
-						definition.AppendLine ("<p>"+ nextElement.InnerHTML +"</p>");
+						definition.AppendLine ("<p>"+ nextElement.InnerHTML +"<em style=\"font-size: 10pt\">Kaynak: http://ayla7.free.fr/laz</em></p>");
 						nextElement = nextElement.NextElementSibling;
 						if (nextElement == null) break;
 					}
