@@ -42,7 +42,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 					break;
 				};
 				// https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
-				wordlistHTML.Append ("\""+  words[i].Word.Trim() +"\",");
+				wordlistHTML.Append ("\""+  System.Text.RegularExpressions.Regex.Replace(words[i].Word.Trim(), @"\t|\n|\r", "") +"\",");
 				writeToDisk(lng.ToString() + i.ToString() + ".html" , words[i].Definition);
 			}
 			wordlistHTML.Append ("\"END\"]}");
