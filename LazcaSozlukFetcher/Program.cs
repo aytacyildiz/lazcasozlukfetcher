@@ -4,6 +4,7 @@ using System.IO;
 using CsQuery;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace com.kodgulugum.lazcasozlukfetcher
 {
@@ -14,6 +15,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			// test
 			Fetcher f = new Fetcher();
 			f.fetchAndSave(Fetcher.Language.Lazca);
+			f.fetchAndSave(Fetcher.Language.Turkce);
 		}
 	}
 
@@ -34,7 +36,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		public enum Language { Turkce, Lazca }
 		// methods
 		public void fetchAndSave(Language lng){
-			words = (lng == Language.Lazca) ? getLazcaWords ("A","B","C","C1","C2","D","E","F","G","Gy","G1","H","I","J","K","K1","Ky","Ky1","L","M","N","O","P","P1","R","S","S1","T","T1","U","V","X","X1","Y","Z","Z1","3","31") : null;
+			words = (lng == Language.Lazca) ? getLazcaWords ("A","B","C","C1","C2","D","E","F","G","Gy","G1","H","I","J","K","K1","Ky","Ky1","L","M","N","O","P","P1","R","S","S1","T","T1","U","V","X","X1","Y","Z","Z1","3","31") : getTurckeWords("A-C","D-J","K-R","S-Z");
 			// null check
 			if(words==null) {
 				Console.WriteLine ("HATA: {0} hic bir kelime bulunamadi",lng.ToString());
@@ -46,7 +48,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 					Console.WriteLine ("HATA: Bir kelimede terslik var");
 					break;
 				};
-				wordlistHTML.Append ("\""+  System.Text.RegularExpressions.Regex.Replace(words[i].Word.Trim(), @"\t|\n|\r", "") +"\",");
+				wordlistHTML.Append ("\""+  Regex.Replace(words[i].Word.Trim(), @"\t|\n|\r", "") +"\",");
 				writeToDisk(lng.ToString() + i.ToString() + ".html" , words[i].Definition);
 			}
 			wordlistHTML.Append ("\"END\"]}");
@@ -59,23 +61,34 @@ namespace com.kodgulugum.lazcasozlukfetcher
 					sw.Write(data);
 				}
 			}
-			catch (System.IO.IOException e){
+			catch (IOException e){
 				Console.WriteLine ("HATA: Diske yazmada hata!");
 				Console.WriteLine (e.Message);
 			}
+		}
+		private List<Entry> getTurckeWords(params string[] letters){
+			List<Entry> dict = new List<Entry> ();
+			int counter = 1;
+			foreach (var item in letters) {
+				string url = "http://ayla7.free.fr/laz/Turkce-Lazca-"+item+".html";
+				var p_elements = getElements(url,".western:not([lang='tr-TR'])");
+				counter = 1;
+				foreach (var p in p_elements) {
+					if(counter >= 6){
+						if(counter==6 && item=="A-C") continue; // need 7th
+						dict.Add(new Entry(extractTurkceWord(p),"<p>"+ p.InnerHTML +"<em class=\"source\" style=\"font-size: 10pt\">Kaynak: http://ayla7.free.fr/laz</em></p>"));
+					}
+					counter++;
+				}
+			}
+			if(dict!=null) mergeSameDefinitions(dict);
+			return dict;
 		}
 		private List<Entry> getLazcaWords(params string[] letters){
 			List<Entry> dict = new List<Entry> ();
 			foreach (var letter in letters) {
 				string url = "http://ayla7.free.fr/laz/Laz." + letter + ".html";
-				// create dom from html string
-				dom = getHtml (url) ?? String.Empty;
-				// find separators
-				var p_elements = dom[".western[lang='tr-TR']"];
-				if(p_elements==null) {
-					Console.WriteLine ("HATA: .western[lang='tr-TR'] ile eleman bulunamadi");
-					continue;
-				}
+				var p_elements = getElements(url,".western[lang='tr-TR']");
 				foreach (var p in p_elements) {
 					// find the next element which will probably be a definition
 					var nextElement = p.NextElementSibling;
@@ -96,6 +109,14 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			if(dict!=null) mergeSameDefinitions(dict);
 			return dict;
 		} 
+		private CQ getElements(string url,string selector){
+			// create dom from html string
+			dom = getHtml (url) ?? String.Empty;
+			// find separators
+			var p_elements = dom[selector];
+			if(p_elements==null) Console.WriteLine ("HATA: {0} ile eleman bulunamadi",selector);
+			return p_elements;
+		}
 		private void mergeSameDefinitions(List<Entry> dict){
 			for (int i = 0; i < dict.Count; i++) {
 				if(dict.Count <= i+1) break; // because removed items
@@ -149,6 +170,16 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			}
 			hwres.Close (); // release the source
 			return result;
+		}
+		private string extractTurkceWord(IDomObject de){
+			// remove whitespaces and etc.
+			string text = Regex.Replace(de.InnerText,@"\t|\n|\r", "");
+			// remove Square Brackets and its content
+			text = Regex.Replace(text,@"\[[^\]]*\]",""); // \[ [ ^ \] ]* \]
+			// get string before before Colon
+			Regex re = new Regex(@".*(?=\:)");
+			text = re.Match(text).ToString().Trim();
+			return text;
 		}
 	}
 }
