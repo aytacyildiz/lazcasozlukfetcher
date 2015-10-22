@@ -39,13 +39,15 @@ namespace com.kodgulugum.lazcasozlukfetcher
 				return;
 			}
 			StringBuilder wordlistHTML = new StringBuilder ("{\"wordlist\":[");
+			int counter=0;
 			foreach (var item in words) {
 				if(item.Key==null || item.Value==null){
 					Console.WriteLine ("HATA: Bir kelimede terslik var");
 					break;
 				}
-				wordlistHTML.Append ("\""+  Regex.Replace(item.Key.Trim(), @"\t|\n|\r", " ") +"\",");
-				writeToDisk(lng.ToString() + "_" + Regex.Replace(item.Key.Trim(),@"[^a-zA-Z1-9]","_") + ".html" , item.Value);
+				wordlistHTML.Append ("\""+  Regex.Replace(item.Key.Trim(), @"\t|\n|\r", " ").Trim() +"\",");
+				writeToDisk(lng.ToString() + "_" + counter + ".html" , item.Value);
+				counter++;
 			}
 			wordlistHTML.Append ("\"END\"]}");
 			writeToDisk("datalist"+lng.ToString()+".json" , wordlistHTML.ToString());
