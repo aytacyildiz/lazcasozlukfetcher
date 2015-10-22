@@ -12,6 +12,10 @@ namespace com.kodgulugum.lazcasozlukfetcher
 	{
 		public static void Main (string[] args)
 		{
+			// notes
+			// ./LazcaSozlukFetcher.exe 2>&1 | tee log"$(date)"
+			// ./LazcaSozlukFetcher.exe 2>&1 | tee log"$(date)" ; notify-
+
 			// test
 			Fetcher f = new Fetcher();
 			f.fetchAndSave(Fetcher.Language.Lazca);
@@ -68,14 +72,17 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		}
 		private List<Entry> getTurckeWords(params string[] letters){
 			List<Entry> dict = new List<Entry> ();
-			int counter = 1;
+			int counter = 0;
 			foreach (var item in letters) {
 				string url = "http://ayla7.free.fr/laz/Turkce-Lazca-"+item+".html";
 				var p_elements = getElements(url,".western:not([lang='tr-TR'])");
-				counter = 1;
+				counter = 0;
 				foreach (var p in p_elements) {
-					if(counter >= 6){
-						if(counter==6 && item=="A-C") continue; // need 7th
+					if(counter==5 && item=="A-C") {  // need 6th not 5th
+						counter++;
+						continue;
+					}
+					if(counter >= 5){
 						dict.Add(new Entry(extractTurkceWord(p),"<p>"+ p.InnerHTML +"<em class=\"source\" style=\"font-size: 10pt\">Kaynak: http://ayla7.free.fr/laz</em></p>"));
 					}
 					counter++;
@@ -173,11 +180,11 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		}
 		private string extractTurkceWord(IDomObject de){
 			// remove whitespaces and etc.
-			string text = Regex.Replace(de.InnerText,@"\t|\n|\r", "");
+			string text = Regex.Replace(de.InnerText,@"\t|\n|\r", " ");
 			// remove Square Brackets and its content
 			text = Regex.Replace(text,@"\[[^\]]*\]",""); // \[ [ ^ \] ]* \]
 			// get string before before Colon
-			Regex re = new Regex(@".*(?=\:)");
+			Regex re = new Regex(@"[^\:]*(?=\:)");
 			text = re.Match(text).ToString().Trim();
 			return text;
 		}
