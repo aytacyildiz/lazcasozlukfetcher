@@ -14,7 +14,7 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		{
 			// notes
 			// ./LazcaSozlukFetcher.exe 2>&1 | tee log"$(date)"
-			// ./LazcaSozlukFetcher.exe 2>&1 | tee log"$(date)" ; notify-
+			// ./LazcaSozlukFetcher.exe 2>&1 | tee log"$(date)" ; notify-send "Bitti"
 
 			// test
 			Fetcher f = new Fetcher();
@@ -23,20 +23,12 @@ namespace com.kodgulugum.lazcasozlukfetcher
 		}
 	}
 
-	class Entry{
-		public string Word { get; set; }
-		public string Definition { get; set; }
-		public Entry(string word, string def){
-			this.Word = word;
-			this.Definition = def;
-		}
-	}
 
 	class Fetcher
 	{
 		// prop
 		private CQ dom { get; set; }
-		private List<Entry> words { get; set; }
+		private Dictionary<string,string> words { get; set; }
 		public enum Language { Turkce, Lazca }
 		// methods
 		public void fetchAndSave(Language lng){
@@ -46,14 +38,14 @@ namespace com.kodgulugum.lazcasozlukfetcher
 				Console.WriteLine ("HATA: {0} hic bir kelime bulunamadi",lng.ToString());
 				return;
 			}
-			StringBuilder wordlistHTML = new StringBuilder ("{\"wordlist\":["); 
-			for (int i = 0; i < words.Count; i++) {
-				if(words[i].Word==null || words[i].Definition==null) {
+			StringBuilder wordlistHTML = new StringBuilder ("{\"wordlist\":[");
+			foreach (var item in words) {
+				if(item.Key==null || item.Value==null){
 					Console.WriteLine ("HATA: Bir kelimede terslik var");
 					break;
-				};
-				wordlistHTML.Append ("\""+  Regex.Replace(words[i].Word.Trim(), @"\t|\n|\r", "") +"\",");
-				writeToDisk(lng.ToString() + i.ToString() + ".html" , words[i].Definition);
+				}
+				wordlistHTML.Append ("\""+  Regex.Replace(item.Key.Trim(), @"\t|\n|\r", " ") +"\",");
+				writeToDisk(lng.ToString() + "_" + Regex.Replace(item.Key.Trim(),@"[^a-zA-Z1-9]","_") + ".html" , item.Value);
 			}
 			wordlistHTML.Append ("\"END\"]}");
 			writeToDisk("datalist"+lng.ToString()+".json" , wordlistHTML.ToString());
@@ -70,9 +62,11 @@ namespace com.kodgulugum.lazcasozlukfetcher
 				Console.WriteLine (e.Message);
 			}
 		}
-		private List<Entry> getTurckeWords(params string[] letters){
-			List<Entry> dict = new List<Entry> ();
+		private Dictionary<string,string> getTurckeWords(params string[] letters){
+			Dictionary<string,string> dict = new Dictionary<string,string> ();
 			int counter = 0;
+			string extractedWord = null;
+			string innerHTML = null;
 			foreach (var item in letters) {
 				string url = "http://ayla7.free.fr/laz/Turkce-Lazca-"+item+".html";
 				var p_elements = getElements(url,".western:not([lang='tr-TR'])");
@@ -83,16 +77,23 @@ namespace com.kodgulugum.lazcasozlukfetcher
 						continue;
 					}
 					if(counter >= 5){
-						dict.Add(new Entry(extractTurkceWord(p),"<p>"+ p.InnerHTML +"<em class=\"source\" style=\"font-size: 10pt\">Kaynak: http://ayla7.free.fr/laz</em></p>"));
+						extractedWord = extractTurkceWord(p);
+						if(extractedWord==null){
+							Console.WriteLine ("HATA: HTML icinden kelime elde edilemeyior: {0}",p.OuterHTML);
+							counter++;
+							continue;
+						}
+						innerHTML = "<p>"+ p.InnerHTML +"<em class=\"source\" style=\"font-size: 10pt\">Kaynak: http://ayla7.free.fr/laz</em></p>";
+						if(dict.ContainsKey(extractedWord)) dict[extractedWord] += innerHTML;
+						else dict.Add(extractedWord,innerHTML);
 					}
 					counter++;
 				}
 			}
-			if(dict!=null) mergeSameDefinitions(dict);
 			return dict;
 		}
-		private List<Entry> getLazcaWords(params string[] letters){
-			List<Entry> dict = new List<Entry> ();
+		private Dictionary<string,string> getLazcaWords(params string[] letters){
+			Dictionary<string,string> dict = new Dictionary<string,string> ();
 			foreach (var letter in letters) {
 				string url = "http://ayla7.free.fr/laz/Laz." + letter + ".html";
 				var p_elements = getElements(url,".western[lang='tr-TR']");
@@ -110,10 +111,10 @@ namespace com.kodgulugum.lazcasozlukfetcher
 						nextElement = nextElement.NextElementSibling;
 						if (nextElement == null) break;
 					}
-					dict.Add (new Entry(word,definition.ToString()));
+					if(dict.ContainsKey(word)) dict[word] += definition.ToString();
+					else dict.Add(word, definition.ToString());
 				}
 			}
-			if(dict!=null) mergeSameDefinitions(dict);
 			return dict;
 		} 
 		private CQ getElements(string url,string selector){
@@ -123,16 +124,6 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			var p_elements = dom[selector];
 			if(p_elements==null) Console.WriteLine ("HATA: {0} ile eleman bulunamadi",selector);
 			return p_elements;
-		}
-		private void mergeSameDefinitions(List<Entry> dict){
-			for (int i = 0; i < dict.Count; i++) {
-				if(dict.Count <= i+1) break; // because removed items
-				int j = i;
-				while (dict[j].Word == dict[j+1].Word) {
-					dict[j].Definition += dict[j+1].Definition;
-					dict.RemoveAt(j+1);
-				}
-			}
 		}
 		private string getHtml(string url){
 			HttpWebRequest hwreq = (HttpWebRequest)WebRequest.Create (url);
