@@ -20,6 +20,8 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			Fetcher f = new Fetcher();
 			f.fetchAndSave(Fetcher.Language.Lazca);
 			f.fetchAndSave(Fetcher.Language.Turkce);
+			f.fetchAndSaveInfo();
+
 		}
 	}
 
@@ -51,6 +53,17 @@ namespace com.kodgulugum.lazcasozlukfetcher
 			}
 			wordlistHTML.Append ("\"END\"]}");
 			writeToDisk("datalist"+lng.ToString()+".json" , wordlistHTML.ToString());
+		}
+		public void fetchAndSaveInfo(){
+			var elements = getElements("http://ayla7.free.fr/laz/","body>p.western");
+			StringBuilder html = new StringBuilder();
+			html.AppendLine("<p><a href=\"http://ayla7.free.fr/laz\">http://ayla7.free.fr/laz</a></p>");
+			for (int i = 16; i < elements.Length; i++) {
+				html.AppendLine(elements[i].OuterHTML);
+			}
+			writeToDisk("dictinfo.html",html.ToString());
+			string softinfo="<p><strong>Sürüm:</strong> 1.0.0</p><p><strong>Yazan:</strong> Aytaç Yıldız</p><p><strong>Lisans:</strong> GNU GENERAL PUBLIC LICENSE V2</p><p><strong>Kaynak kodu:</strong> <a href=\"https://github.com/aytacyildiz/lazcasozluk\">github.com/aytacyildiz/lazcasozluk</a></p>";
+			writeToDisk("softinfo.html",softinfo);
 		}
 		private void writeToDisk(string name, string data){
 			try {
